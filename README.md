@@ -26,6 +26,44 @@ Notes: sales are gross (before refunds) and include unfulfilled lines. Returns u
 
 The reference date is always passed in, never read inside the function, so results are repeatable. The data ends on 2025-10-27, so the demo page uses 2025-10-28 as "today".
 
+## Chat route
+
+`POST /api/chat` (`app/api/chat/route.ts`) connects an OpenRouter model to the five metric tools with the Vercel AI SDK. It streams the answer. The model makes one tool call with exact `YYYY-MM-DD` dates, then explains the result in plain words.
+
+The tools are described in merchants' words (`lib/chat.ts`), for example `returns_by_product`: "Which products came back as returns, counted on the day they were returned." The system prompt tells the model today's date, that weeks run Monday to Sunday, and lists ready-made ranges from `resolveDateRange`. For "today" = 2025-10-28, "last week" is 2025-10-20 to 2025-10-26.
+
+Questions about ads, ad spend or ROAS, or dates before May 2025, get a plain "we don't have that data" and no tool call.
+
+### Set up the key
+
+1. Create a key at https://openrouter.ai/settings/keys and pick a free model that supports tools (filter models by Free and tools).
+2. Copy `.env.example` to `.env.local` and fill it in:
+
+   ```
+   OPENROUTER_API_KEY=sk-or-v1-...
+   OPENROUTER_MODEL=provider/model-name:free
+   ```
+
+`.env.local` is git-ignored and only read on the server (no `NEXT_PUBLIC_` prefix). Never commit the key. If it leaks, delete it in OpenRouter and make a new one.
+
+`REFERENCE_DATE` (optional) sets the "today" used for date phrases. It defaults to 2025-10-28, and a request body can override it with `today`.
+
+### Try it
+
+```
+npm run dev
+curl -N http://localhost:3000/api/chat -H "Content-Type: application/json" -d '{
+  "messages": [{
+    "id": "1", "role": "user",
+    "parts": [{ "type": "text", "text": "which jackets came back as returns last week" }]
+  }]
+}'
+```
+
+Expected: one `returns_by_product` call with `start: "2025-10-20"` and `end: "2025-10-26"`, then a short answer about the Alpine Down Parka (3 units, $657) and the Northridge Insulated Jacket (1 unit, $135.15). The response is a stream of AI SDK UI message events.
+
+If the key or model is missing, the route returns a 500 with a message saying what to set.
+
 ## Use
 
 ```
