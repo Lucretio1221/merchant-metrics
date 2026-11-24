@@ -5,6 +5,7 @@ import {
   dailySales,
   newCustomers,
   returningCustomers,
+  returnedOrderLines,
   returnsByProduct,
   unitsSoldByProduct,
 } from "./metrics.ts";
@@ -45,6 +46,13 @@ export const metricTools = {
     inputSchema: range,
     execute: ({ start, end }) => returnsByProduct(start, end),
   }),
+  returned_order_lines: tool({
+    description:
+      "The list of returned order lines, one row each, with the product, variant, return date and " +
+      "return reason. Use it when the merchant wants to read each return, not a total per product.",
+    inputSchema: range,
+    execute: ({ start, end }) => returnedOrderLines(start, end),
+  }),
   new_customers: tool({
     description: "How many first-time customers ordered each day.",
     inputSchema: range,
@@ -79,7 +87,8 @@ export function buildSystemPrompt(referenceDate: string): string {
     "",
     "How to answer:",
     "- Make one tool call, with the dates you worked out, then explain the result in plain words.",
-    "- Pick the tool that matches the question: sales per day, best sellers, returns by product, new customers or repeat customers.",
+    "- Pick the tool that matches the question: sales per day, best sellers, returns by product, the list of returned lines, new customers or repeat customers.",
+    "- The page draws the tool result as a chart or table under your answer, so keep your answer to one or two short sentences and do not repeat every number.",
     "- Sales are before refunds. Returns are counted on the day they came back.",
     "",
     "Out of scope:",

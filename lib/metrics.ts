@@ -163,6 +163,41 @@ export function unitsSoldByProduct(
   return { metric: "units_sold_by_product", start, end, rows };
 }
 
+export type ReturnedLineRow = {
+  orderId: string;
+  productTitle: string;
+  variant: string;
+  quantity: number;
+  returnDate: string;
+  returnReason: string;
+  refundAmount: number;
+};
+
+/** Each returned order line, by return_date (newest first). For reading row by row. */
+export function returnedOrderLines(
+  start: string,
+  end: string,
+  orders: OrderLine[] = loadOrders(),
+): MetricResult<ReturnedLineRow> {
+  assertRange(start, end);
+  const rows = orders
+    .filter(
+      (l) =>
+        l.returned && l.returnDate && l.returnDate >= start && l.returnDate <= end,
+    )
+    .map((l) => ({
+      orderId: l.orderId,
+      productTitle: l.productTitle,
+      variant: l.variant,
+      quantity: l.quantity,
+      returnDate: l.returnDate as string,
+      returnReason: l.returnReason ?? "Unknown",
+      refundAmount: cents(l.refundAmount),
+    }))
+    .sort((a, b) => b.returnDate.localeCompare(a.returnDate));
+  return { metric: "returned_order_lines", start, end, rows };
+}
+
 export const METRICS = {
   daily_sales: {
     run: dailySales,
@@ -186,6 +221,11 @@ export const METRICS = {
     run: unitsSoldByProduct,
     description:
       "Units sold and sales per product, by order date. For reorder planning.",
+  },
+  returned_order_lines: {
+    run: returnedOrderLines,
+    description:
+      "Each returned order line with product, variant, return date and reason, by return date.",
   },
 } as const;
 

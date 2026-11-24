@@ -1,4 +1,4 @@
-﻿import { test } from "node:test";
+import { test } from "node:test";
 import assert from "node:assert/strict";
 import { buildSystemPrompt, metricTools } from "../lib/chat.ts";
 
@@ -9,10 +9,11 @@ test("system prompt lists exact dates for last week (reference Tue 2025-10-28)",
   assert.match(prompt, /ROAS/);
 });
 
-test("all five metric tools are registered with merchant wording", () => {
+test("all six metric tools are registered with merchant wording", () => {
   assert.deepEqual(Object.keys(metricTools).sort(), [
     "daily_sales",
     "new_customers",
+    "returned_order_lines",
     "returning_customers",
     "returns_by_product",
     "units_sold_by_product",
@@ -26,4 +27,14 @@ test("returns_by_product tool runs with exact dates", async () => {
     { toolCallId: "t", messages: [] } as never,
   )) as { rows: { productId: string }[] };
   assert.deepEqual(out.rows.map((r) => r.productId), ["P-1001", "P-1002"]);
+});
+
+test("returned_order_lines lists each returned line with variant, date and reason", async () => {
+  const out = (await metricTools.returned_order_lines.execute!(
+    { start: "2025-10-20", end: "2025-10-26" },
+    { toolCallId: "t", messages: [] } as never,
+  )) as { rows: { productTitle: string; variant: string; returnDate: string; returnReason: string }[] };
+  assert.equal(out.rows.length, 4);
+  assert.ok(out.rows.every((r) => r.variant && r.returnDate && r.returnReason));
+  assert.ok(out.rows[0].returnDate >= out.rows[3].returnDate);
 });

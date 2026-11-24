@@ -1,6 +1,6 @@
 # Merchant metrics
 
-Five metric functions over the Shopify order history, May to October 2025 (`data/orders.csv`, 28 lines). Each takes `start` and `end` (`YYYY-MM-DD`, inclusive).
+Six metric functions over the Shopify order history, May to October 2025 (`data/orders.csv`, 28 lines). Each takes `start` and `end` (`YYYY-MM-DD`, inclusive).
 
 | Metric | Function | Counts | Dated by |
 | --- | --- | --- | --- |
@@ -9,6 +9,7 @@ Five metric functions over the Shopify order history, May to October 2025 (`data
 | `returning_customers` | `returningCustomers` | distinct `customer_id` with `is_repeat_customer = true` | `order_date` |
 | `returns_by_product` | `returnsByProduct` | units returned, `refund_amount`, reasons per product | `return_date` |
 | `units_sold_by_product` | `unitsSoldByProduct` | units and sales per product (reorder planning) | `order_date` |
+| `returned_order_lines` | `returnedOrderLines` | each returned line: product, variant, return date, reason, refund | `return_date` |
 
 Notes: sales are gross (before refunds) and include unfulfilled lines. Returns use `return_date`, so a jacket bought in September and returned last week counts last week.
 
@@ -30,7 +31,7 @@ The reference date is always passed in, never read inside the function, so resul
 
 `POST /api/chat` (`app/api/chat/route.ts`) connects an OpenRouter model to the five metric tools with the Vercel AI SDK. It streams the answer. The model makes one tool call with exact `YYYY-MM-DD` dates, then explains the result in plain words.
 
-The tools are described in merchants' words (`lib/chat.ts`), for example `returns_by_product`: "Which products came back as returns, counted on the day they were returned." The system prompt tells the model today's date, that weeks run Monday to Sunday, and lists ready-made ranges from `resolveDateRange`. For "today" = 2025-10-28, "last week" is 2025-10-20 to 2025-10-26.
+The six tools are described in merchants' words (`lib/chat.ts`), for example `returns_by_product`: "Which products came back as returns, counted on the day they were returned." The system prompt tells the model today's date, that weeks run Monday to Sunday, and lists ready-made ranges from `resolveDateRange`. For "today" = 2025-10-28, "last week" is 2025-10-20 to 2025-10-26.
 
 Questions about ads, ad spend or ROAS, or dates before May 2025, get a plain "we don't have that data" and no tool call.
 
@@ -64,6 +65,30 @@ Expected: one `returns_by_product` call with `start: "2025-10-20"` and `end: "20
 
 If the key or model is missing, the route returns a 500 with a message saying what to set.
 
+## Dashboard
+
+The page at `/` is a chat. Each answer shows, in order: the dates used, a chart for that metric, one or two plain sentences, and a small note on what the numbers include. Code is in `app/_components`.
+
+![Dashboard: sales per day as a line and last week's returns as bars](docs/dashboard.png)
+
+*The screenshot was taken with a scripted model reply, so no API key was needed. The charts and numbers come from the real metric functions.*
+
+| Metric | Chart | Why |
+| --- | --- | --- |
+| `daily_sales` | Line | It's a trend over days, and a line shows the ups and downs. |
+| `units_sold_by_product` | Bars | It compares products, ranked from most to least sold, for reorders. |
+| `returns_by_product` | Bars | It compares products, so the most-returned jackets stand out. Reasons and refunds sit under each bar. |
+| `new_customers` | Metrics cards | Over a week it's a few small numbers, so a total, a per-day average and the busiest day read faster than a chart. |
+| `returning_customers` | Metrics cards | Same as new customers. |
+| `returned_order_lines` | Table | The seller reads each row: product, variant, return date and reason. |
+
+States:
+
+- **Loading:** while a tool call streams, the answer shows a grey placeholder in the same shape as the chart, so the layout doesn't jump when the real chart arrives.
+- **Tool call fails:** the placeholder becomes "Couldn't load this chart. Try asking again."
+- **Request fails:** a short message appears under the chat, and the question box keeps working.
+- **No tool called:** questions about ads, ROAS or dates before May 2025 get the plain-text answer only.
+- **No orders in the dates:** the card says "No orders in these dates."
 ## Use
 
 ```
@@ -72,7 +97,7 @@ npm test
 npm run dev
 ```
 
-- Page: `/` (try `/?range=last month&today=2025-10-28`)
+- Dashboard: `/`. The raw report from before the chat is at `/report` (try `/report?range=last month&today=2025-10-28`)
 - API: `/api/metrics/returns_by_product?start=2025-10-20&end=2025-10-26`
 - API with a phrase: `/api/metrics/daily_sales?range=last week&today=2025-10-28`
 
