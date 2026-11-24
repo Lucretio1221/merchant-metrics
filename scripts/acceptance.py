@@ -104,6 +104,8 @@ def main():
         qid, text, _, metric, _, rng, filt = r[:7]
         row = {"metric": metric, "range": rng, "filter": filt}
         if SCORE_ONLY:
+            if qid not in captured:
+                continue
             c = captured[qid]
             call, output, first, answer, error = c.get("call"), None, c.get("firstChartSeconds"), c.get("answer") or "", c.get("error") or c.get("pageError")
             rendered = bool(c.get("rendered")) and not error
@@ -138,7 +140,8 @@ def main():
     crashes = sum(x["Rendered Without Crash (Y/N)"] == "N" for x in results)
     times = [float(x["Seconds To First Chart"]) for x in results if x["Seconds To First Chart"]]
     slow = [x["Question ID"] for x in results if not x["Seconds To First Chart"] or float(x["Seconds To First Chart"]) >= 5.0]
-    print(f"\nCorrect calls: {correct}/20 (need 18)  Crashes: {crashes} (need 0)  Slowest: {max(times):.1f}s  Over 5s: {slow}")
+    print(f"\nQuestions run: {len(results)} of 20")
+    print(f"Correct calls: {correct}/{len(results)} (need 18 of 20)  Crashes: {crashes} (need 0)  Slowest: {max(times):.1f}s  Over 5s: {slow}")
 
 
 main()
