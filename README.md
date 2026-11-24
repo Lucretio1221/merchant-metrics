@@ -1,5 +1,7 @@
 # Merchant metrics
 
+Live: https://merchant-metrics-ecru.vercel.app
+
 Six metric functions over the Shopify order history, May to October 2025 (`data/orders.csv`, 28 lines). Each takes `start` and `end` (`YYYY-MM-DD`, inclusive).
 
 | Metric | Function | Counts | Dated by |
