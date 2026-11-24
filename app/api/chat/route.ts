@@ -38,9 +38,10 @@ export async function POST(request: Request) {
   const openrouter = createOpenRouter({ apiKey });
 
   const result = streamText({
-    model: openrouter.chat(modelId),
+    model: openrouter.chat(modelId, { extraBody: { reasoning: { enabled: false } } }),
     instructions: buildSystemPrompt(today),
     messages: await convertToModelMessages(body.messages),
+    temperature: 0,
     tools: metricTools,
     stopWhen: isStepCount(2),
     prepareStep: ({ stepNumber }) =>
@@ -48,6 +49,14 @@ export async function POST(request: Request) {
   });
 
   return createUIMessageStreamResponse({
-    stream: toUIMessageStream({ stream: result.stream }),
+    stream: toUIMessageStream({
+      stream: result.stream,
+      onError: (error) => {
+        const text = error instanceof Error ? error.message : String(error);
+        return /rate limit|429/i.test(text)
+          ? "the AI model is out of free requests for today"
+          : "the AI model could not answer";
+      },
+    }),
   });
 }
