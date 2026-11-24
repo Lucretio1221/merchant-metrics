@@ -54,6 +54,17 @@ Questions about ads, ad spend or ROAS, or dates before May 2025, get a plain "we
 
 `REFERENCE_DATE` (optional) sets the "today" used for date phrases. It defaults to 2025-10-27, and a request body can override it with `today`.
 
+### Model and limits
+
+The deployed model is `nvidia/nemotron-3-ultra-550b-a55b:free`. The route turns its reasoning off and sets temperature to 0: with reasoning on, the first chart took up to 13 seconds, and with it off the slowest was 3.5 seconds. Vague timing ("lately", "this season", "since summer") is detected in `lib/dates.ts` and the prompt is told to use the default range.
+
+OpenRouter's free tier allows 50 free-model requests per day, and each question uses two (the tool call, then the explanation). Adding 10 credits raises that to 1000 a day. When the limit is hit, the page says "the AI model is out of free requests for today".
+
+To score the acceptance questions against any running copy of the app (needs `pip install openpyxl`):
+
+```
+python scripts/acceptance.py https://merchant-metrics-ecru.vercel.app questions.xlsx results.csv
+```
 ### Try it
 
 ```

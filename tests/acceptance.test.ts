@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { buildSystemPrompt, DEFAULT_REFERENCE_DATE, metricTools } from "../lib/chat.ts";
-import { resolveDateRange } from "../lib/dates.ts";
+import { hasVagueDates, resolveDateRange } from "../lib/dates.ts";
 import { filterOrders } from "../lib/filters.ts";
 import { parseOrders } from "../lib/orders.ts";
 
@@ -74,4 +74,33 @@ test("a vague question still renders with the default range", async () => {
   const { start, end } = resolveDateRange("last 30 days", DEFAULT_REFERENCE_DATE);
   const out = await call("returns_by_product", { start, end });
   assert.ok(Array.isArray(out.rows));
+});
+
+test("vague timing is detected, explicit dates are not", () => {
+  for (const q of [
+    "best sellers this season",
+    "are repeat customers growing since summer",
+    "what's selling rn",
+    "return rate on boots lately?",
+    "revenue by wk recently",
+    "refunds been bad lately?",
+  ]) {
+    assert.equal(hasVagueDates(q), true, q);
+  }
+  for (const q of [
+    "sales last 30 days online store only",
+    "how much did i make since labor day",
+    "top 5 hoodies in august",
+    "how many ppl bought twice in october",
+    "how are returns doing",
+  ]) {
+    assert.equal(hasVagueDates(q), false, q);
+  }
+});
+
+test("a vague question puts the default range in the prompt, an explicit one does not", () => {
+  const vague = buildSystemPrompt(DEFAULT_REFERENCE_DATE, "repeat customers since summer");
+  assert.match(vague, /timing is vague, so use exactly 2025-09-27 to 2025-10-26/);
+  const explicit = buildSystemPrompt(DEFAULT_REFERENCE_DATE, "sales since labor day");
+  assert.doesNotMatch(explicit, /timing is vague/);
 });

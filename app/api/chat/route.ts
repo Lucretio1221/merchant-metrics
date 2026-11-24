@@ -10,6 +10,11 @@ import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { buildSystemPrompt, DEFAULT_REFERENCE_DATE, metricTools } from "@/lib/chat";
 import { isIsoDate } from "@/lib/dates";
 
+function lastQuestion(messages: UIMessage[]): string {
+  const last = [...messages].reverse().find((m) => m.role === "user");
+  return (last?.parts ?? []).map((p) => (p.type === "text" ? p.text : "")).join(" ");
+}
+
 export async function POST(request: Request) {
   const apiKey = process.env.OPENROUTER_API_KEY;
   const modelId = process.env.OPENROUTER_MODEL;
@@ -39,7 +44,7 @@ export async function POST(request: Request) {
 
   const result = streamText({
     model: openrouter.chat(modelId, { extraBody: { reasoning: { enabled: false } } }),
-    instructions: buildSystemPrompt(today),
+    instructions: buildSystemPrompt(today, lastQuestion(body.messages)),
     messages: await convertToModelMessages(body.messages),
     temperature: 0,
     tools: metricTools,

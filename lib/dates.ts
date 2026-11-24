@@ -16,6 +16,13 @@ export type RangePhrase = (typeof RANGE_PHRASES)[number];
 /** Used when a merchant gives no dates or only vague ones ("lately", "this season"). */
 export const DEFAULT_RANGE_PHRASE: RangePhrase = "last 30 days";
 
+const VAGUE_DATES =
+  /\b(lately|recently|rn|right now|these days|this season|a while|(since|from) (the )?(summer|spring|winter|fall|autumn))\b/i;
+
+/** True when the question only gives vague timing, so the default range should be used. */
+export function hasVagueDates(question: string): boolean {
+  return VAGUE_DATES.test(question);
+}
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
 
 export function isIsoDate(value: string): boolean {

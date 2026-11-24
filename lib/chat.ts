@@ -1,6 +1,6 @@
 import { tool } from "ai";
 import { z } from "zod";
-import { DEFAULT_RANGE_PHRASE, RANGE_PHRASES, resolveDateRange } from "./dates.ts";
+import { DEFAULT_RANGE_PHRASE, hasVagueDates, RANGE_PHRASES, resolveDateRange } from "./dates.ts";
 import { CHANNELS, filterOrders, type Filters } from "./filters.ts";
 import {
   dailySales,
@@ -101,7 +101,7 @@ export const metricTools = {
   }),
 };
 
-export function buildSystemPrompt(referenceDate: string): string {
+export function buildSystemPrompt(referenceDate: string, question = ""): string {
   const phrases = RANGE_PHRASES.map((p) => {
     const { start, end } = resolveDateRange(p, referenceDate);
     return `- "${p}": ${start} to ${end}`;
@@ -120,6 +120,11 @@ export function buildSystemPrompt(referenceDate: string): string {
     "- A month name means the whole month. For the current month, stop today.",
     "- 'Since' a day or holiday means from that day through yesterday (for example 'since Labor Day' is 2025-09-01 to the day before today).",
     `- If there are no dates, or only vague words (lately, recently, rn, this season, since summer, a while), always use ${fallback.start} to ${fallback.end} (${DEFAULT_RANGE_PHRASE}) and say that you used it. Never work out a start date for a vague word such as "summer" or "season".`,
+    ...(hasVagueDates(question)
+      ? [
+          `- This merchant's timing is vague, so use exactly ${fallback.start} to ${fallback.end} (${DEFAULT_RANGE_PHRASE}) and say that you used it.`,
+        ]
+      : []),
     "",
     "Filters:",
     "- If the merchant names a kind of product (jackets, sweaters, beanies, boots, hoodies, vests), always pass it in categories, even if we may not sell it. Fix obvious typos first (jakets -> jackets).",
