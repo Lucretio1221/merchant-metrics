@@ -410,3 +410,41 @@ th {
     grid-template-columns: 1fr;
   }
 }
+
+.chart-wrap {
+  position: relative;
+}
+
+.chart-svg .hit {
+  fill: transparent;
+  cursor: pointer;
+  outline: none;
+}
+
+.chart-svg .hit:focus-visible {
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+
+.tooltip {
+  position: absolute;
+  transform: translate(-50%, calc(-100% - 12px));
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.35;
+  white-space: nowrap;
+  color: var(--foreground);
+  background: var(--background);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.tooltip strong {
+  font-size: 13px;
+}

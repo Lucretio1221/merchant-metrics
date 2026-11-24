@@ -1,6 +1,9 @@
 """Runs Erik's acceptance questions against a running chat route and scores them.
 
     python scripts/acceptance.py <base-url> <questions.xlsx> <results.csv>
+    python scripts/acceptance.py --score <capture.json> <questions.xlsx> <results.csv>
+
+The second form scores a run captured by scripts/acceptance-live.cjs (real browser).
 
 Time to first chart = seconds from sending the question until the tool result
 arrives (the page draws the chart at that moment). For questions with no tool
@@ -14,7 +17,11 @@ import urllib.request
 
 import openpyxl
 
-BASE, XLSX, OUT = sys.argv[1].rstrip("/"), sys.argv[2], sys.argv[3]
+SCORE_ONLY = sys.argv[1] == "--score"
+if SCORE_ONLY:
+    CAPTURE, XLSX, OUT = sys.argv[2], sys.argv[3], sys.argv[4]
+else:
+    BASE, XLSX, OUT = sys.argv[1].rstrip("/"), sys.argv[2], sys.argv[3]
 DEFAULT_RANGE = ("2025-09-27", "2025-10-26")
 TOOL_FOR = {
     "Sales": ["daily_sales"],
@@ -92,11 +99,17 @@ def main():
     ws = wb["Acceptance Questions"]
     rows = list(ws.iter_rows(min_row=2, values_only=True))
     results = []
+    captured = {c["id"]: c for c in json.load(open(CAPTURE, encoding="utf-8"))} if SCORE_ONLY else {}
     for r in rows:
         qid, text, _, metric, _, rng, filt = r[:7]
         row = {"metric": metric, "range": rng, "filter": filt}
-        call, output, first, answer, error, total = ask(text)
-        rendered = error is None and (output is not None or answer.strip() != "")
+        if SCORE_ONLY:
+            c = captured[qid]
+            call, output, first, answer, error = c.get("call"), None, c.get("firstChartSeconds"), c.get("answer") or "", c.get("error") or c.get("pageError")
+            rendered = bool(c.get("rendered")) and not error
+        else:
+            call, output, first, answer, error, total = ask(text)
+            rendered = error is None and (output is not None or answer.strip() != "")
         ok, why = score(row, call, output, answer, error)
         if qid == "AQ-05" and call and call["tool"] in ("daily_sales", "returns_by_product"):
             a = call["input"]

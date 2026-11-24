@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type {
   CustomersRow,
   DailySalesRow,
@@ -37,7 +38,11 @@ export function LineChart({ rows }: { rows: DailySalesRow[] }) {
   const every = Math.ceil(rows.length / 8);
   const path = rows.map((r, i) => `${i === 0 ? "M" : "L"}${x(i)},${y(r.sales)}`).join(" ");
 
+  const [active, setActive] = useState<number | null>(null);
+  const shown = active === null ? null : rows[active];
+
   return (
+    <div className="chart-wrap">
     <svg
       viewBox={`0 0 ${W} ${H}`}
       role="img"
@@ -55,11 +60,19 @@ export function LineChart({ rows }: { rows: DailySalesRow[] }) {
       <path d={path} className="line" fill="none" />
       {rows.map((r, i) => (
         <g key={r.date}>
-          <circle cx={x(i)} cy={y(r.sales)} r={4} className="dot">
-            <title>
-              {shortDate(r.date)}: {money(r.sales)}, {r.orders} orders, {r.units} units
-            </title>
-          </circle>
+          <circle cx={x(i)} cy={y(r.sales)} r={active === i ? 6 : 4} className="dot" />
+          <circle
+            cx={x(i)}
+            cy={y(r.sales)}
+            r={12}
+            className="hit"
+            tabIndex={0}
+            aria-label={`${shortDate(r.date)}: ${money(r.sales)}, ${r.orders} orders, ${r.units} units`}
+            onMouseEnter={() => setActive(i)}
+            onMouseLeave={() => setActive(null)}
+            onFocus={() => setActive(i)}
+            onBlur={() => setActive(null)}
+          />
           {i % every === 0 && (
             <text x={x(i)} y={H - 10} textAnchor="middle" className="axis">
               {shortDate(r.date)}
@@ -68,6 +81,21 @@ export function LineChart({ rows }: { rows: DailySalesRow[] }) {
         </g>
       ))}
     </svg>
+    {shown && active !== null && (
+      <div
+        className="tooltip"
+        role="tooltip"
+        style={{ left: `${(x(active) / W) * 100}%`, top: `${(y(shown.sales) / H) * 100}%` }}
+      >
+        <strong>{shortDate(shown.date)}</strong>
+        <span>{money(shown.sales)} in sales</span>
+        <span>
+          {shown.orders} {shown.orders === 1 ? "order" : "orders"} · {shown.units}{" "}
+          {shown.units === 1 ? "unit" : "units"}
+        </span>
+      </div>
+    )}
+    </div>
   );
 }
 
