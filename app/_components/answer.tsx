@@ -93,7 +93,15 @@ export function Placeholder({ shape }: { shape: Shape }) {
   );
 }
 
+function filterLabel(result: MetricResult<unknown>) {
+  const f = result.filters;
+  return [...(f?.categories ?? []), ...(f?.channels ?? [])].join(", ");
+}
+
 function Chart({ name, result }: { name: string; result: MetricResult<unknown> }) {
+  if (result.noMatch) {
+    return <p className="empty">We don&apos;t have any {filterLabel(result)} in the order data.</p>;
+  }
   if (result.rows.length === 0 || (name.endsWith("_customers") && !hasAny(result))) {
     return <p className="empty">No orders in these dates.</p>;
   }
@@ -137,7 +145,12 @@ export function ToolAnswer({
     <section className="answer-card">
       <header>
         <h2>{info.title}</h2>
-        {result && <span className="dates">{dateRangeLabel(result.start, result.end)}</span>}
+        {result && (
+          <span className="dates">
+            {dateRangeLabel(result.start, result.end)}
+            {filterLabel(result) && ` · ${filterLabel(result)}`}
+          </span>
+        )}
       </header>
       {failed ? (
         <p className="error-note">Couldn&apos;t load this chart. Try asking again.</p>

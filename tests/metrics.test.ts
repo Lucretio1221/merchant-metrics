@@ -32,8 +32,12 @@ test("date phrases resolve to exact dates (reference Tue 2025-10-28)", () => {
     end: "2025-10-27",
   });
   assert.deepEqual(resolveDateRange("last 7 days", ref), {
-    start: "2025-10-22",
-    end: ref,
+    start: "2025-10-21",
+    end: "2025-10-27",
+  });
+  assert.deepEqual(resolveDateRange("last 30 days", "2025-10-27"), {
+    start: "2025-09-27",
+    end: "2025-10-26",
   });
   assert.deepEqual(resolveDateRange("last month", ref), {
     start: "2025-09-01",

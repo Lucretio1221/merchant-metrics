@@ -6,6 +6,8 @@ export type MetricResult<Row> = {
   start: string;
   end: string;
   rows: Row[];
+  filters?: { categories?: string[]; channels?: string[] };
+  noMatch?: boolean;
 };
 
 const cents = (n: number) => Math.round(n * 100) / 100;

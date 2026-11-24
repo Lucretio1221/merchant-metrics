@@ -13,6 +13,9 @@ export const RANGE_PHRASES = [
 
 export type RangePhrase = (typeof RANGE_PHRASES)[number];
 
+/** Used when a merchant gives no dates or only vague ones ("lately", "this season"). */
+export const DEFAULT_RANGE_PHRASE: RangePhrase = "last 30 days";
+
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
 
 export function isIsoDate(value: string): boolean {
@@ -54,7 +57,7 @@ function monthStart(value: string): string {
  * Turns a phrase like "last week" into exact inclusive dates.
  * Weeks run Monday to Sunday. "last week" is the last full week before the
  * reference date. "this week" and "this month" stop at the reference date.
- * "last 7 days" and "last 30 days" end on the reference date, inclusive.
+ * "last 7 days" and "last 30 days" are full days ending yesterday.
  */
 export function resolveDateRange(
   phrase: string,
@@ -78,9 +81,9 @@ export function resolveDateRange(
       return { start: addDays(thisMonday, -7), end: addDays(thisMonday, -1) };
     }
     case "last 7 days":
-      return { start: addDays(ref, -6), end: ref };
+      return { start: addDays(ref, -7), end: addDays(ref, -1) };
     case "last 30 days":
-      return { start: addDays(ref, -29), end: ref };
+      return { start: addDays(ref, -30), end: addDays(ref, -1) };
     case "this month":
       return { start: monthStart(ref), end: ref };
     case "last month": {

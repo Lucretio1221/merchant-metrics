@@ -21,18 +21,21 @@ Notes: sales are gross (before refunds) and include unfulfilled lines. Returns u
 | --- | --- |
 | `last week` | previous full Monday to Sunday |
 | `this week` / `this month` | start of period to the reference date |
-| `last 7 days` / `last 30 days` | ending on the reference date, inclusive |
+| `last 7 days` / `last 30 days` | full days ending yesterday |
 | `yesterday` / `today` | that single day |
 | `last month` | the previous calendar month |
 
-The reference date is always passed in, never read inside the function, so results are repeatable. The data ends on 2025-10-27, so the demo page uses 2025-10-28 as "today".
+The reference date is always passed in, never read inside the function, so results are repeatable. The data ends on 2025-10-27, and the acceptance questions were written on that day, so the chat treats 2025-10-27 as "today". Without dates, or with only vague ones ("lately", "this season"), the chat uses the default range, `last 30 days` (2025-09-27 to 2025-10-26), and says so. A month name means the whole month, stopping today for the current one. "Since Labor Day" means 2025-09-01 through yesterday.
 
 ## Chat route
 
 `POST /api/chat` (`app/api/chat/route.ts`) connects an OpenRouter model to the five metric tools with the Vercel AI SDK. It streams the answer. The model makes one tool call with exact `YYYY-MM-DD` dates, then explains the result in plain words.
 
-The six tools are described in merchants' words (`lib/chat.ts`), for example `returns_by_product`: "Which products came back as returns, counted on the day they were returned." The system prompt tells the model today's date, that weeks run Monday to Sunday, and lists ready-made ranges from `resolveDateRange`. For "today" = 2025-10-28, "last week" is 2025-10-20 to 2025-10-26.
+The six tools are described in merchants' words (`lib/chat.ts`), for example `returns_by_product`: "Which products came back as returns, counted on the day they were returned." The system prompt tells the model today's date, that weeks run Monday to Sunday, and lists ready-made ranges from `resolveDateRange`. For "today" = 2025-10-27, "last week" is 2025-10-20 to 2025-10-26.
 
+Filters: every tool also takes optional `categories` (the merchant's own word, such as "jackets", "sweaters" or "beanies", matched against product category and title in `lib/filters.ts`) and `channels` (`Online Store`, `Shop app`, `Point of Sale`, `Instagram`). The result echoes the filters, and the page shows them next to the dates. If nothing in the order data matches (for example hoodies or boots), the card says "We don't have any ... in the order data."
+
+Out of scope, so no tool call and no chart: ad spend, ROAS and marketing channels like Meta, stock levels, and anything before May 2025.
 Questions about ads, ad spend or ROAS, or dates before May 2025, get a plain "we don't have that data" and no tool call.
 
 ### Set up the key
@@ -47,7 +50,7 @@ Questions about ads, ad spend or ROAS, or dates before May 2025, get a plain "we
 
 `.env.local` is git-ignored and only read on the server (no `NEXT_PUBLIC_` prefix). Never commit the key. If it leaks, delete it in OpenRouter and make a new one.
 
-`REFERENCE_DATE` (optional) sets the "today" used for date phrases. It defaults to 2025-10-28, and a request body can override it with `today`.
+`REFERENCE_DATE` (optional) sets the "today" used for date phrases. It defaults to 2025-10-27, and a request body can override it with `today`.
 
 ### Try it
 
@@ -97,17 +100,17 @@ npm test
 npm run dev
 ```
 
-- Dashboard: `/`. The raw report from before the chat is at `/report` (try `/report?range=last month&today=2025-10-28`)
+- Dashboard: `/`. The raw report from before the chat is at `/report` (try `/report?range=last month&today=2025-10-27`)
 - API: `/api/metrics/returns_by_product?start=2025-10-20&end=2025-10-26`
-- API with a phrase: `/api/metrics/daily_sales?range=last week&today=2025-10-28`
+- API with a phrase: `/api/metrics/daily_sales?range=last week&today=2025-10-27`
 
 
 ## Output for last week
 
-Run with `npm run last-week` (reference date 2025-10-28, so last week is Mon 2025-10-20 to Sun 2025-10-26).
+Run with `npm run last-week` (reference date 2025-10-27, so last week is Mon 2025-10-20 to Sun 2025-10-26).
 
 ```text
-"last week" as of 2025-10-28 -> 2025-10-20 to 2025-10-26
+"last week" as of 2025-10-27 -> 2025-10-20 to 2025-10-26
 
 $ daily_sales("2025-10-20", "2025-10-26")
 [
