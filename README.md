@@ -105,6 +105,20 @@ States:
 - **Request fails:** a short message appears under the chat, and the question box keeps working.
 - **No tool called:** questions about ads, ROAS or dates before May 2025 get the plain-text answer only.
 - **No orders in the dates:** the card says "No orders in these dates."
+## Live answers
+
+Five questions asked on the live page, https://merchant-metrics-ecru.vercel.app (reference date 2025-10-27). Each one got a tool call, a chart or table, and a short answer.
+
+![Live page with five questions answered](docs/live-answers.jpg)
+
+| Question | Tool | Dates used | Shown as | Answer |
+| --- | --- | --- | --- | --- |
+| which jackets came back as returns last week | `returns_by_product` | Oct 20 to Oct 26 | Bars | Alpine Down Parka 3 units ($657.00), Northridge Insulated Jacket 1 unit ($135.15) |
+| sales per day last 14 days | `daily_sales` | Oct 13 to Oct 26 | Line | Sales on 7 of 14 days, from $72 to $238.50 per day |
+| what sold best since July 1 | `units_sold_by_product` | Jul 1 to Oct 26 | Bars | Northridge Insulated Jacket, Alpine Down Parka and Wool Beanie tied at 4 units |
+| show me each returned order last week | `returned_order_lines` | Oct 20 to Oct 26 | Table | 4 returned lines: 3 Alpine Down Parka, 1 Northridge Insulated Jacket |
+| are repeat customers growing | `returning_customers` | Sep 27 to Oct 26 | Metrics cards | 5 repeat customers on 5 separate days, no clear growth |
+
 ## Use
 
 ```
